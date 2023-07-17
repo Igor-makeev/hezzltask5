@@ -3,12 +3,13 @@ CREATE TABLE IF NOT EXISTS events
 (
  id         int,
 campaign_id  int,
-name text,
-description text,
+name String,
+description String,
 priority int,
-removed UInt8 ,
+removed Bool ,
 created_at TIMESTAMP 
 )ENGINE = Log;
+
 
 
 

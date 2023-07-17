@@ -1,72 +1,71 @@
 package logclickhouse
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
 	"hezzltask5/internal/models"
 
-	_ "github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
+const insertQuery = "INSERT INTO events"
+
 type LogClickHouse struct {
-	DB *sql.DB
+	conn driver.Conn
 }
 
-func NewClickHouseClient(addr string) (*sql.DB, error) {
-	db, err := sql.Open("clickhouse", addr)
-	if err != nil {
+func NewClickHouseClient(addr string) (driver.Conn, error) {
+	var (
+		ctx       = context.Background()
+		conn, err = clickhouse.Open(&clickhouse.Options{
+			Addr: []string{addr},
+		})
+	)
 
+	if err != nil {
 		return nil, err
 	}
-	return db, nil
 
-}
-
-func NewLogClickHouse(db *sql.DB) *LogClickHouse {
-	return &LogClickHouse{DB: db}
-}
-
-func (lc *LogClickHouse) Upload(batch []models.Event) error {
-	data := make([]models.Event, len(batch))
-	copy(data, batch)
-
-	tx, err := lc.DB.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-
+	if err := conn.Ping(ctx); err != nil {
+		if exception, ok := err.(*clickhouse.Exception); ok {
+			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
 		}
-	}()
-
-	stmt, err := tx.Prepare("INSERT INTO events (id, campaign_id, name,description,priority,removed,created_at) VALUES (?, ?, ?,?,?,?,?)")
-	if err != nil {
-		tx.Rollback()
-		return err
-
+		return nil, err
 	}
-	defer stmt.Close()
-	var boolValue int
+	return conn, nil
+
+}
+
+func NewLogClickHouse(conn driver.Conn) *LogClickHouse {
+	return &LogClickHouse{conn: conn}
+}
+
+func (lc *LogClickHouse) Upload(data []models.Event) error {
+
+	localData := make([]models.Event, len(data))
+	copy(localData, data)
+
+	batch, err := lc.conn.PrepareBatch(context.Background(), insertQuery)
+	if err != nil {
+		return err
+	}
+
 	for _, elem := range data {
 
-		boolValue = 0
-		if elem.Removed {
-			boolValue = 1
-		}
-		_, err := stmt.Exec(elem.Id, elem.CampaignId, elem.Name, elem.Description, elem.Priority, boolValue, elem.EventTime)
+		err := batch.Append(
+			int32(elem.Id),
+			int32(elem.CampaignId),
+			elem.Name,
+			elem.Description,
+			int32(elem.Priority),
+			elem.Removed,
+			elem.EventTime,
+		)
 		if err != nil {
-
 			return err
 		}
-
 	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
+	return batch.Send()
 
 }
