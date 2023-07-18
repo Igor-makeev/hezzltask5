@@ -62,7 +62,7 @@ func NewPostgresClient(dbsn string) (*pgx.Conn, error) {
 	return conn, err
 }
 
-func (ps *PostgresStorage) Screate(ctx context.Context, campaignId int, name string) (models.Item, error) {
+func (ps *PostgresStorage) Create(ctx context.Context, campaignId int, name string) (models.Item, error) {
 	ps.Lock()
 	defer ps.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
@@ -78,7 +78,7 @@ func (ps *PostgresStorage) Screate(ctx context.Context, campaignId int, name str
 	return item, nil
 }
 
-func (ps *PostgresStorage) Supdate(ctx context.Context, id, campaignId int, name, description string) (models.Item, error) {
+func (ps *PostgresStorage) Update(ctx context.Context, id, campaignId int, name, description string) (models.Item, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -116,7 +116,7 @@ func (ps *PostgresStorage) Supdate(ctx context.Context, id, campaignId int, name
 	return item, nil
 }
 
-func (ps *PostgresStorage) Sdelete(ctx context.Context, id, campaignId int) (models.Item, error) {
+func (ps *PostgresStorage) Delete(ctx context.Context, id, campaignId int) (models.Item, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -156,7 +156,7 @@ func (ps *PostgresStorage) Sdelete(ctx context.Context, id, campaignId int) (mod
 
 }
 
-func (ps *PostgresStorage) SgetList(ctx context.Context) ([]models.Item, error) {
+func (ps *PostgresStorage) GetList(ctx context.Context) ([]models.Item, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 	list := make([]models.Item, 0)

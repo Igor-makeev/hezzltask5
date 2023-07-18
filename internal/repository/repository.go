@@ -8,10 +8,10 @@ import (
 )
 
 type persistanceStorage interface {
-	Screate(ctx context.Context, campaignId int, name string) (models.Item, error)
-	Supdate(ctx context.Context, id, campaignId int, name, description string) (models.Item, error)
-	Sdelete(ctx context.Context, id, campaignId int) (models.Item, error)
-	SgetList(ctx context.Context) ([]models.Item, error)
+	Create(ctx context.Context, campaignId int, name string) (models.Item, error)
+	Update(ctx context.Context, id, campaignId int, name, description string) (models.Item, error)
+	Delete(ctx context.Context, id, campaignId int) (models.Item, error)
+	GetList(ctx context.Context) ([]models.Item, error)
 }
 
 type cache interface {
@@ -21,8 +21,8 @@ type cache interface {
 }
 
 type Repository struct {
-	persistanceStorage
-	cache
+	persistanceStorage persistanceStorage
+	cache              cache
 }
 
 func NewRepository(ps persistanceStorage, c cache) *Repository {
@@ -30,17 +30,17 @@ func NewRepository(ps persistanceStorage, c cache) *Repository {
 }
 
 func (r *Repository) Create(ctx context.Context, campaignId int, name string) (models.Item, error) {
-	return r.persistanceStorage.Screate(ctx, campaignId, name)
+	return r.persistanceStorage.Create(ctx, campaignId, name)
 }
 
 func (r *Repository) Update(ctx context.Context, id, campaignId int, name, description string) (models.Item, error) {
 	r.cache.Remove(ctx)
-	return r.persistanceStorage.Supdate(ctx, id, campaignId, name, description)
+	return r.persistanceStorage.Update(ctx, id, campaignId, name, description)
 }
 
 func (r *Repository) Delete(ctx context.Context, id, campaignId int) (models.Item, error) {
 	r.cache.Remove(ctx)
-	return r.persistanceStorage.Sdelete(ctx, id, campaignId)
+	return r.persistanceStorage.Delete(ctx, id, campaignId)
 }
 
 func (r *Repository) GetList(ctx context.Context) ([]models.Item, error) {
@@ -50,7 +50,7 @@ func (r *Repository) GetList(ctx context.Context) ([]models.Item, error) {
 	} else {
 		logrus.Printf("repo level: getlist method: %v", err)
 	}
-	data, err := r.persistanceStorage.SgetList(ctx)
+	data, err := r.persistanceStorage.GetList(ctx)
 	if err != nil {
 		return nil, err
 	}

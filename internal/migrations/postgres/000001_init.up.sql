@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS campaings
   name text not null unique
 );
 
-create index if not exists index_id_campaings on campaings (id);
 
 INSERT INTO campaings (name)
     VALUES ('запись 1');
